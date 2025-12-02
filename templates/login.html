@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mudasir VIP Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #ff007f; --dark: #0f0f0f; --glass: rgba(255, 255, 255, 0.05); }
+        body { background: var(--dark); font-family: 'Poppins', sans-serif; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
+        .bg-glow { position: absolute; width: 300px; height: 300px; background: var(--primary); filter: blur(150px); opacity: 0.2; border-radius: 50%; z-index: -1; }
+        .login-card { background: var(--glass); padding: 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); width: 320px; text-align: center; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        h1 { font-weight: 700; letter-spacing: 2px; margin-bottom: 30px; text-transform: uppercase; }
+        span { color: var(--primary); }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; background: rgba(0,0,0,0.3); border: 1px solid #333; color: white; border-radius: 10px; box-sizing: border-box; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(255, 0, 127, 0.3); }
+        button { width: 100%; padding: 15px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 10px; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--primary); }
+        .footer { margin-top: 20px; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div class="login-card">
+        <h1>Mudasir <span>Tech</span></h1>
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Portal ID" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit" id="btn">ENTER SYSTEM</button>
+        </form>
+        <p class="footer">🔒 Secure Access Only</p>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn');
+            btn.innerText = "AUTHENTICATING...";
+            
+            const formData = new FormData();
+            formData.append('username', document.getElementById('username').value);
+            formData.append('password', document.getElementById('password').value);
+
+            const res = await fetch('/login', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if(data.status === 'success') {
+                window.location.href = '/dashboard';
+            } else {
+                alert(data.msg);
+                btn.innerText = "ENTER SYSTEM";
+            }
+        });
+    </script>
+</body>
+</html>

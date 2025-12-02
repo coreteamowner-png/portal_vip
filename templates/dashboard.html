@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mudasir Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #ff007f; --dark: #121212; --card: #1e1e1e; --text: #e0e0e0; }
+        body { background: var(--dark); color: var(--text); font-family: 'Poppins', sans-serif; margin: 0; padding-bottom: 50px; }
+        
+        /* Navbar */
+        .nav { background: rgba(0,0,0,0.8); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
+        .brand { font-weight: 700; font-size: 1.2rem; }
+        .brand span { color: var(--primary); }
+        .logout { color: #ff4444; text-decoration: none; font-size: 0.9rem; }
+
+        /* Container */
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+        
+        /* Cards */
+        .card { background: var(--card); border-radius: 15px; padding: 20px; margin-bottom: 20px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s; }
+        .card:hover { border-color: var(--primary); }
+        .card-header { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; color: var(--primary); }
+        
+        /* Buttons & Inputs */
+        button.action-btn { width: 100%; padding: 12px; background: #333; border: 1px solid #444; color: white; border-radius: 8px; margin-bottom: 10px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
+        button.action-btn:hover { background: var(--primary); border-color: var(--primary); }
+        button.primary-btn { width: 100%; padding: 12px; background: var(--primary); border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        select, input { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 10px; outline: none; }
+        
+        /* Result Box */
+        .result-box { background: #000; padding: 15px; border-radius: 8px; border: 1px solid #333; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 0.9rem; display: none; }
+        .num-item { padding: 8px; border-bottom: 1px solid #222; cursor: pointer; display: flex; justify-content: space-between; }
+        .num-item:hover { background: #222; color: var(--primary); }
+        .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #333; }
+
+        /* Tabs */
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Loaders */
+        .loader { text-align: center; color: var(--primary); display: none; padding: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="nav">
+        <div class="brand">MUDASIR <span>VIP</span></div>
+        <a href="/logout" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div style="text-align: center;">
+                <h2>Welcome, <span style="color:var(--primary)">{{ user }}</span></h2>
+                <p style="color:#888; font-size: 0.9rem;">Role: {{ role.upper() }}</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="fas fa-th-large"></i> Menu</div>
+            <button class="action-btn" onclick="openTab('nums')"><i class="fas fa-sim-card"></i> Get Numbers</button>
+            <button class="action-btn" onclick="fetchStats()"><i class="fas fa-chart-line"></i> Today Stats</button>
+            {% if role == 'admin' %}
+            <button class="action-btn" onclick="openTab('create')"><i class="fas fa-user-plus"></i> Create Client</button>
+            {% endif %}
+        </div>
+
+        <div id="nums" class="tab-content card">
+            <div class="card-header"><i class="fas fa-mobile-alt"></i> Number Scraper</div>
+            <div id="rangeLoader" class="loader"><i class="fas fa-spinner fa-spin"></i> Loading Ranges...</div>
+            <select id="countrySelect"></select>
+            <select id="typeSelect">
+                <option value="N">🔴 Not Active Today</option>
+                <option value="A">🟢 Active Today</option>
+            </select>
+            <button class="primary-btn" onclick="fetchNumbers()">Fetch Numbers</button>
+            
+            <div style="margin-top: 15px; display:flex; gap:10px;">
+                <button class="action-btn" style="text-align:center; justify-content:center;" onclick="formatNums('full')">With Code</button>
+                <button class="action-btn" style="text-align:center; justify-content:center;" onclick="formatNums('cut')">Without Code</button>
+            </div>
+
+            <div id="numLoader" class="loader"><i class="fas fa-spinner fa-spin"></i> Scrapping...</div>
+            <div id="numResult" class="result-box" style="margin-top: 10px;"></div>
+        </div>
+
+        <div id="stats" class="tab-content card">
+            <div class="card-header"><i class="fas fa-chart-pie"></i> Live Stats</div>
+            <div id="statResult"></div>
+        </div>
+
+        <div id="create" class="tab-content card">
+            <div class="card-header"><i class="fas fa-user-shield"></i> Create Client</div>
+            <input type="text" id="c_name" placeholder="Full Name">
+            <input type="text" id="c_pass" placeholder="Password">
+            <button class="primary-btn" onclick="createClient()">Create Now</button>
+        </div>
+
+    </div>
+
+    <script>
+        let rawNumbers = [];
+
+        function openTab(id) {
+            document.querySelectorAll('.tab-content').forEach(d => d.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+            if(id === 'nums') loadRanges();
+        }
+
+        async function loadRanges() {
+            const sel = document.getElementById('countrySelect');
+            if(sel.options.length > 0) return;
+            
+            document.getElementById('rangeLoader').style.display = 'block';
+            const res = await fetch('/api/get_ranges', {method:'POST'});
+            const data = await res.json();
+            document.getElementById('rangeLoader').style.display = 'none';
+
+            if(data.status === 'success') {
+                sel.innerHTML = data.data.map(r => `<option value="${r.val}">${r.text}</option>`).join('');
+            }
+        }
+
+        async function fetchNumbers() {
+            const rng = document.getElementById('countrySelect').value;
+            const typ = document.getElementById('typeSelect').value;
+            
+            document.getElementById('numLoader').style.display = 'block';
+            const res = await fetch('/api/fetch_nums', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({range: rng, type: typ})
+            });
+            const data = await res.json();
+            document.getElementById('numLoader').style.display = 'none';
+
+            if(data.status === 'success') {
+                rawNumbers = data.data;
+                renderNums(rawNumbers);
+            } else {
+                alert('No Numbers Found');
+            }
+        }
+
+        function renderNums(arr) {
+            const box = document.getElementById('numResult');
+            box.style.display = 'block';
+            box.innerHTML = `<div style="padding:5px; color:#aaa; font-size:0.8rem">${arr.length} Numbers Found (Tap to Copy)</div>`;
+            box.innerHTML += arr.map(n => `<div class="num-item" onclick="copyTxt('${n}')">${n} <i class="far fa-copy"></i></div>`).join('');
+        }
+
+        function formatNums(mode) {
+            if(rawNumbers.length === 0) return;
+            const codes = ["380", "994", "62", "84", "92", "91", "1", "7"];
+            
+            let formatted = rawNumbers.map(n => {
+                let clean = n.replace('+', '');
+                if(mode === 'cut') {
+                    for(let c of codes) {
+                        if(clean.startsWith(c)) return clean.substring(c.length);
+                    }
+                }
+                return '+' + clean;
+            });
+            renderNums(formatted);
+        }
+
+        function copyTxt(txt) {
+            navigator.clipboard.writeText(txt);
+            alert('Copied: ' + txt);
+        }
+
+        async function fetchStats() {
+            openTab('stats');
+            const box = document.getElementById('statResult');
+            box.innerHTML = '<div class="loader" style="display:block">Loading...</div>';
+            
+            const res = await fetch('/api/stats', {method:'POST'});
+            const data = await res.json();
+            
+            if(data.status === 'success') {
+                box.innerHTML = data.data.map(s => `
+                    <div class="stat-row">
+                        <span>${s.key}</span>
+                        <span style="color:var(--primary); font-weight:bold">${s.val}</span>
+                    </div>
+                `).join('');
+            } else {
+                box.innerHTML = "Failed to load stats.";
+            }
+        }
+
+        async function createClient() {
+            const name = document.getElementById('c_name').value;
+            const pass = document.getElementById('c_pass').value;
+            if(!name || !pass) return alert("Fill all fields");
+
+            const res = await fetch('/api/create_client', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: name, pass: pass})
+            });
+            const data = await res.json();
+            alert(data.status === 'success' ? 'Client Created!' : 'Failed!');
+        }
+    </script>
+</body>
+</html>
